@@ -1,11 +1,11 @@
-from flask import Flask, request
+from flask import Flask, request, render_template_string
 import requests
 import pandas as pd
 import jdatetime
 import os
 
 # ======== تنظیمات ========
-TOKEN = os.getenv("TOKEN")  # توکن ربات بله از Env
+TOKEN = os.getenv("TOKEN")  # توکن ربات بله
 API_URL = f"https://tapi.bale.ai/bot{TOKEN}"
 EXCEL_FILE = "data_fixed.xlsx"
 
@@ -27,8 +27,7 @@ def webhook():
 
     # مرحله شروع
     if text == "/start":
-        msg = "سلام! لطفاً کد ملی خود را وارد کنید."
-        send_message(chat_id, msg)
+        send_message(chat_id, "سلام! لطفاً کد ملی خود را وارد کنید.")
         return "ok"
 
     # بررسی کد ملی
@@ -76,6 +75,7 @@ def webhook():
     send_message(chat_id, "لطفاً کد ملی یا مبلغ معتبر وارد کنید.")
     return "ok"
 
+
 # ======== تأیید پرداخت زرین‌پال ========
 @app.route("/callback")
 def callback():
@@ -112,13 +112,27 @@ def callback():
                 payments.to_excel(writer, index=False, sheet_name="پرداخت‌ها")
 
             send_message(chat_id, f"✅ پرداخت {amount_toman} تومان با موفقیت ثبت شد.")
-            return "پرداخت موفق بود ✅"
+            return render_template_string("""
+                <html><body style="text-align:center; font-family:tahoma; background:#f6fff6;">
+                  <h1 style="color:green;">✅ پرداخت موفق بود</h1>
+                  <p>مبلغ پرداختی: {{amount}} تومان</p>
+                </body></html>
+            """, amount=amount_toman)
         else:
             send_message(chat_id, "❌ پرداخت ناموفق بود.")
-            return "پرداخت ناموفق ❌"
+            return render_template_string("""
+                <html><body style="text-align:center; font-family:tahoma; background:#fff6f6;">
+                  <h1 style="color:red;">❌ پرداخت ناموفق بود</h1>
+                </body></html>
+            """)
     else:
         send_message(chat_id, "❌ پرداخت توسط کاربر لغو شد.")
-        return "پرداخت لغو شد ❌"
+        return render_template_string("""
+            <html><body style="text-align:center; font-family:tahoma; background:#fffaf0;">
+              <h1 style="color:orange;">⚠️ پرداخت لغو شد</h1>
+            </body></html>
+        """)
+
 
 # ======== توابع کمکی ========
 def send_message(chat_id, text):
